@@ -39,16 +39,16 @@ $rip=~ s/\n//g;
 ## let's first see if the commit message contains a Jixee Task ID and if not, exit
 if ($rip =~ /.*\[id:([\w\d-]+)\].*\[?.*/) {
         $id=$1;
-		## Task ID found, let's pull the info we need
+	## Task ID found, let's pull the info we need
         if ($rip =~ /.*commit\s([\w\d]+)Author:(.*)\<.*Date:([\s\d-]+)\s*(\[.*\]).*/) {
-			$commitid=$1;
-			$committer=$2;
-			$timestamp=$3;
-			$commitmsg=$4;
-			$timestamp=~ s/\s//g;
-			$commitmsg=~ s/\'//g;
-			$commitmsg=~ s/\"//g;
-			$json='{"action":"version","task_id":"'.$id.'", "commit_id":"'.$commitid.'","committer":{"name":"'.$committer.'"},"timestamp":"'.$timestamp.'", "message":"'.$commitmsg.'"}';
+		$commitid=$1;
+		$committer=$2;
+		$timestamp=$3;
+		$commitmsg=$4;
+		$timestamp=~ s/\s//g;
+		$commitmsg=~ s/\'//g;
+		$commitmsg=~ s/\"//g;
+		$json='{"action":"version","task_id":"'.$id.'", "commit_id":"'.$commitid.'","committer":{"name":"'.$committer.'"},"timestamp":"'.$timestamp.'", "message":"'.$commitmsg.'"}';
            	system("curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook > /dev/null");
         }
 } else {
