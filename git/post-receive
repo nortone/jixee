@@ -1,8 +1,7 @@
 #!/usr/bin/perl
 #
 # simple perl script to execute Jixee webhook on self hosted git
-# eric@jixee.me
-#
+# 
 # tabstop=8
 #
 
