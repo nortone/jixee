@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+#
+# simple perl script to execute Jixee webhook on self hosted git
+# eric@jixee.me
+
+use strict;
+
+##########
+## vars ##
+##########
+
+my $in=<STDIN>;
+my @args=split(/\s/,$in);
+
+my $old=$args[0];
+my $new=$args[1];
+my $ref=$args[2];
+
+## these vars we'll use to build our json post ##
+my $id;
+my $committer;
+my $timestamp;
+my $commitmsg;
+my $commitid;
+my $json;
+
+## EDIT THIS VARIABLE AND ENTER YOUR JIXEE API/WEBHOOK URL
+##
+## Example: 
+## my $webhook='https://jixee.me/main/webhooks?token=ff7133a6e7c129fd9bb63695015553e047c9d366';
+my $webhook='';
+
+## let's get the commit message so we can parse it
+my $rip=`git rev-list --date=short --pretty --stdin $old..$new`;
+
+## remove newlines to make regex easier to debug (could use s modifier too, but like this better)
+$rip=~ s/\n//g; 
+
+## let's first see if the commit message contains a Jixee Task ID and if not, exit
+if ($rip =~ /.*\[id:([\w\d-]+)\].*\[?.*/) {
+        $id=$1;
+		## Task ID found, let's pull the info we need
+        if ($rip =~ /.*commit\s([\w\d]+)Author:(.*)\<.*Date:([\s\d-]+)\s*(\[.*\]).*/) {
+			$commitid=$1;
+			$committer=$2;
+			$timestamp=$3;
+			$commitmsg=$4;
+			$timestamp=~ s/\s//g;
+			$commitmsg=~ s/\'//g;
+			$commitmsg=~ s/\"//g;
+			$json='{"action":"version","task_id":"'.$id.'", "commit_id":"'.$commitid.'","committer":{"name":"'.$committer.'"},"timestamp":"'.$timestamp.'", "message":"'.$commitmsg.'"}';
+           	system("curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook > /dev/null");
+        }
+} else {
+	## since we didn't find an ID, exit
+	exit 1;
+}
