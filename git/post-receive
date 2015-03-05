@@ -25,6 +25,7 @@ my $timestamp;
 my $commitmsg;
 my $commitid;
 my $json;
+my @commits;
 
 my $DEBUG=0;
 
@@ -46,7 +47,7 @@ if ($in =~ /.*refs\/tags.*/ ) {
 }
 
 ## let's get the commit message so we can parse it
-my $rip=`git rev-list --date=short --pretty --stdin $old..$new`;
+my $rip=`git rev-list --reverse --date=short --pretty --stdin $old..$new`;
 
 ## first parse the commits
 @commits = split(/commit/,$rip);
