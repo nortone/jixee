@@ -19,13 +19,15 @@ my $new=$args[1];
 my $ref=$args[2];
 
 ## these vars we'll use to build our json post ##
-my $id;
-my $committer;
-my $timestamp;
-my $commitmsg;
-my $commitid;
-my $json;
+my $branch;
 my @commits;
+my $commitid;
+my $commitmsg;
+my $committer;
+my $id;
+my $json;
+my $timestamp;
+
 
 my $DEBUG=0;
 
@@ -35,11 +37,13 @@ if ($DEBUG) {
 }
 
 
-## EDIT THIS VARIABLE AND ENTER YOUR JIXEE API/WEBHOOK URL
+## EDIT THESE VARIABLES AND ENTER YOUR JIXEE API/WEBHOOK URL, as well as your repo name
 ##
-## Example: 
+## Examples: 
 ## my $webhook='https://jixee.me/main/webhooks?token=ff7133a6e7c129fd9bb63695015553e047c9d366';
+## my $repo='jixee-api';
 my $webhook='';
+my $repo='';
 
 ## let's check to see if this is a tag, and if so, just exit
 if ($in =~ /.*refs\/tags.*/ ) {
@@ -74,7 +78,11 @@ foreach my $c (@commits) {
                 $timestamp=~ s/\s//g;
                 $commitmsg=~ s/\'//g;
                 $commitmsg=~ s/\"//g;
-                $json='{"action":"version","task_id":"'.$id.'", "commit_id":"'.$commitid.'","committer":{"name":"'.$committer.'"},"timestamp":"'.$timestamp.'", "message":"'.$commitmsg.'"}';
+				## let's grab the branch this commit is from
+				$branch=`git branch --contains=$commitid`;
+				$branch=~ s/\*\s//g;
+				$branch=~ s/\n//g;
+                $json='{"action":"version","task_id":"'.$id.'", "commit_id":"'.$commitid.'","committer":{"name":"'.$committer.'"},"timestamp":"'.$timestamp.'", "message":"'.$commitmsg.'", "repository":"'.$repo.'","branch":"'.$branch.'"}';
                 ## debug
                 if ($DEBUG) {
                     print WRITE "curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook > /dev/null\n";
