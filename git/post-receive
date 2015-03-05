@@ -26,31 +26,64 @@ my $commitmsg;
 my $commitid;
 my $json;
 
+my $DEBUG=0;
+
+## debug
+if ($DEBUG) {
+    open(WRITE,">>/tmp/hooktest.log") || die "Can't open /tmp/hooktest.log: $!\n";
+}
+
+
 ## EDIT THIS VARIABLE AND ENTER YOUR JIXEE API/WEBHOOK URL
 ##
 ## Example: 
 ## my $webhook='https://jixee.me/main/webhooks?token=ff7133a6e7c129fd9bb63695015553e047c9d366';
 my $webhook='';
 
+## let's check to see if this is a tag, and if so, just exit
+if ($in =~ /.*refs\/tags.*/ ) {
+    exit;
+}
+
 ## let's get the commit message so we can parse it
 my $rip=`git rev-list --date=short --pretty --stdin $old..$new`;
 
-## remove newlines to make regex easier to debug (could use s modifier too, but like this better)
-$rip=~ s/\n//g; 
+## first parse the commits
+@commits = split(/commit/,$rip);
+my $i=0;
+foreach my $c (@commits) {
+    $i++;
+    ## debug
+    if ($DEBUG) {
+        print WRITE  "$i: $c\n";
+    }
 
-## let's first see if the commit message contains a Jixee Task ID and if not, do nothing
-if ($rip =~ /.*\[id:([\w\d-]+)\].*\[?.*/) {
-        $id=$1;
-	## Task ID found, let's pull the info we need
-        if ($rip =~ /.*commit\s([\w\d]+)Author:(.*)\<.*Date:([\s\d-]+)\s*(\[.*\]).*/) {
-		$commitid=$1;
-		$committer=$2;
-		$timestamp=$3;
-		$commitmsg=$4;
-		$timestamp=~ s/\s//g;
-		$commitmsg=~ s/\'//g;
-		$commitmsg=~ s/\"//g;
-		$json='{"action":"version","task_id":"'.$id.'", "commit_id":"'.$commitid.'","committer":{"name":"'.$committer.'"},"timestamp":"'.$timestamp.'", "message":"'.$commitmsg.'"}';
-           	system("curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook > /dev/null");
-        }
+    ## remove newlines to make regex easier to debug (could use s modifier too, but like this better)
+    $c=~ s/\n//g;
+
+    ## let's first see if the commit message contains a Jixee Task ID and if not, do nothing
+    if ($c =~ /.*\[id:([\w\d-]+)\].*\[?.*/) {
+            $id=$1;
+            ## Task ID found, let's pull the info we need
+            if ($c =~ /\s+([\w\d]+)Author:(.*)\<.*Date:([\s\d-]+)\s*(\[.*\]).*/) {
+                $commitid=$1;
+                $committer=$2;
+                $timestamp=$3;
+                $commitmsg=$4;
+                $timestamp=~ s/\s//g;
+                $commitmsg=~ s/\'//g;
+                $commitmsg=~ s/\"//g;
+                $json='{"action":"version","task_id":"'.$id.'", "commit_id":"'.$commitid.'","committer":{"name":"'.$committer.'"},"timestamp":"'.$timestamp.'", "message":"'.$commitmsg.'"}';
+                ## debug
+                if ($DEBUG) {
+                    print WRITE "curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook > /dev/null\n";
+                }
+                system("curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook > /dev/null");
+            }
+    }
+}
+
+## debug
+if ($DEBUG) {
+    close(WRITE);
 }
