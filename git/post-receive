@@ -30,10 +30,11 @@ my $timestamp;
 
 
 my $DEBUG=0;
+my $LOG="/tmp/hooktest.log";
 
 ## debug
 if ($DEBUG) {
-    open(WRITE,">>/tmp/hooktest.log") || die "Can't open /tmp/hooktest.log: $!\n";
+    open(WRITE,">>$LOG") || die "Can't open $LOG: $!\n";
 }
 
 
@@ -51,7 +52,7 @@ if ($in =~ /.*refs\/tags.*/ ) {
 }
 
 ## let's get the commit message so we can parse it
-my $rip=`git rev-list --reverse --date=short --pretty --stdin $old..$new`;
+my $rip=`git rev-list --reverse --date=iso --pretty --stdin $old..$new`;
 
 ## first parse the commits
 @commits = split(/commit/,$rip);
@@ -67,15 +68,16 @@ foreach my $c (@commits) {
     $c=~ s/\n//g;
 
     ## let's first see if the commit message contains a Jixee Task ID and if not, do nothing
-    if ($c =~ /.*\[id:([\w\d-]+)\].*\[?.*/) {
+    if ($c =~ /.*\[id:([\w\d-]+)\].*\[?.*/ || $c =~ /.*?([a-zA-z]{1,3}\-\d+):.*?/) {
+    #if ($c =~ /.*?([a-zA-z]{1,3}\-\d+:.*).*?/) {
             $id=$1;
             ## Task ID found, let's pull the info we need
-            if ($c =~ /\s+([\w\d]+)Author:(.*)\<.*Date:([\s\d-]+)\s*(\[.*\]).*/) {
+            if ($c =~ /\s+([\w\d]+).*Author:(.*)\<.*Date:\s*(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s\W{1}\d{4})\s*(.*)/s) {
                 $commitid=$1;
                 $committer=$2;
                 $timestamp=$3;
                 $commitmsg=$4;
-                $timestamp=~ s/\s//g;
+				$timestamp=~ s|^(\d{4}-\d{2}-\d{2})\s(\d{2}:\d{2}:\d{2})\s(\W{1})(\d{2})(\d{2})$|$1T$2$3$4:$5|;
                 $commitmsg=~ s/\'//g;
                 $commitmsg=~ s/\"//g;
 				## let's grab the branch this commit is from
@@ -87,7 +89,7 @@ foreach my $c (@commits) {
                 if ($DEBUG) {
                     print WRITE "curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook > /dev/null\n";
                 }
-                system("curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook > /dev/null");
+                system("curl -H \"Content-Type: application/json\" -s -X POST -d \'$json\' $webhook >> /tmp/post-receive-output");
             }
     }
 }
