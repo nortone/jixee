@@ -77,13 +77,13 @@ foreach my $c (@commits) {
                 $committer=$2;
                 $timestamp=$3;
                 $commitmsg=$4;
-				$timestamp=~ s|^(\d{4}-\d{2}-\d{2})\s(\d{2}:\d{2}:\d{2})\s(\W{1})(\d{2})(\d{2})$|$1T$2$3$4:$5|;
+		$timestamp=~ s|^(\d{4}-\d{2}-\d{2})\s(\d{2}:\d{2}:\d{2})\s(\W{1})(\d{2})(\d{2})$|$1T$2$3$4:$5|;
                 $commitmsg=~ s/\'//g;
                 $commitmsg=~ s/\"//g;
-				## let's grab the branch this commit is from
-				$branch=`git branch --contains=$commitid`;
-				$branch=~ s/\*\s//g;
-				$branch=~ s/\n//g;
+		## let's grab the branch this commit is from
+		$branch=`git branch --contains=$commitid`;
+		$branch=~ s/\*\s//g;
+		$branch=~ s/\n//g;
                 $json='{"action":"version","task_id":"'.$id.'", "commit_id":"'.$commitid.'","committer":{"name":"'.$committer.'"},"timestamp":"'.$timestamp.'", "message":"'.$commitmsg.'", "repository":"'.$repo.'","branch":"'.$branch.'"}';
                 ## debug
                 if ($DEBUG) {
