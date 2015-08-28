@@ -54,8 +54,11 @@ if ($in =~ /.*refs\/tags.*/ ) {
 ## let's get the commit message so we can parse it
 my $rip=`git rev-list --reverse --date=iso --pretty --stdin $old..$new`;
 
+## fix the rev-list so that the delimiter becomes something that is unlikely to be used in a commit message
+$rip =~ s/(commit)\s([\w\d]{40})/---COMMIT---  $2/sg;
+
 ## first parse the commits
-@commits = split(/commit/,$rip);
+@commits = split(/---COMMIT---\s/,$rip);
 my $i=0;
 foreach my $c (@commits) {
     $i++;
@@ -68,8 +71,7 @@ foreach my $c (@commits) {
     $c=~ s/\n//g;
 
     ## let's first see if the commit message contains a Jixee Task ID and if not, do nothing
-    if ($c =~ /.*\[id:([\w\d-]+)\].*\[?.*/ || $c =~ /.*?([a-zA-z]{1,3}\-\d+):.*?/) {
-    #if ($c =~ /.*?([a-zA-z]{1,3}\-\d+:.*).*?/) {
+    if ($c =~ /.*\[id:([\w\d-]+)\].*\[?.*/ || $c =~ /.*?([a-zA-z0-9]{1,3}\-\d+):.*?/) {
             $id=$1;
             ## Task ID found, let's pull the info we need
             if ($c =~ /\s+([\w\d]+).*Author:(.*)\<.*Date:\s*(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\s\W{1}\d{4})\s*(.*)/s) {
